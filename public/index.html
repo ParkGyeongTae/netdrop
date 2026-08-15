@@ -36,6 +36,14 @@
     font-size: 14px;
     color: #666;
     margin-top: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #copy {
+    padding: 4px 12px;
+    font-size: 13px;
+    cursor: pointer;
   }
 </style>
 </head>
@@ -44,12 +52,52 @@
   <p>입력하는 내용은 접속한 모든 사람에게 실시간으로 표시됩니다.</p>
   <textarea id="text" placeholder="여기에 입력하세요"></textarea>
 
-  <p id="live-label">실시간 미리보기</p>
+  <p id="live-label">
+    실시간 미리보기
+    <button id="copy" type="button">복사하기</button>
+  </p>
   <div id="live"></div>
 
   <script>
     const textArea = document.getElementById('text');
     const live = document.getElementById('live');
+    const copyButton = document.getElementById('copy');
+
+    function copyLiveText() {
+      const text = live.textContent;
+      if (!text) return;
+
+      const showResult = (label) => {
+        copyButton.textContent = label;
+        setTimeout(() => { copyButton.textContent = '복사하기'; }, 1500);
+      };
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(
+          () => showResult('복사됨!'),
+          () => showResult('복사 실패')
+        );
+        return;
+      }
+
+      // HTTP로 접속한 경우(LAN IP 등) navigator.clipboard를 쓸 수 없어 대체 방식 사용
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      temp.style.position = 'fixed';
+      temp.style.opacity = '0';
+      document.body.appendChild(temp);
+      temp.focus();
+      temp.select();
+      try {
+        document.execCommand('copy');
+        showResult('복사됨!');
+      } catch (err) {
+        showResult('복사 실패');
+      }
+      document.body.removeChild(temp);
+    }
+
+    copyButton.addEventListener('click', copyLiveText);
 
     let liveTimer = null;
     textArea.addEventListener('input', () => {
