@@ -10,8 +10,21 @@ netdrop은 같은 로컬 네트워크(Wi-Fi)에 연결된 두 기기 사이에�
 
 1. 개인 컴퓨터에서 웹서버를 실행한다.
 2. 같은 Wi-Fi에 연결된 회사 컴퓨터의 브라우저로 그 웹서버에 접속한다.
-3. 회사 컴퓨터의 웹페이지에 텍스트를 입력하면, 개인 컴퓨터가 그 텍스트를 받아 클립보드에 복사한다.
-4. (향후) 텍스트뿐 아니라 파일/폴더도 같은 방식으로 주고받는다.
+3. 회사 컴퓨터의 웹페이지 입력창에 텍스트를 입력하면, 접속한 모든 사람에게 실시간으로 표시된다 (`GET /events` SSE + `POST /live`).
+4. "클립보드로 전송" 버튼을 누르면 개인 컴퓨터의 클립보드로 복사된다 (`POST /paste`).
+5. (향후) 텍스트뿐 아니라 파일/폴더도 같은 방식으로 주고받는다.
+
+## 로컬 실행 및 확인 방법
+
+```bash
+node server.js            # 기본 포트 8080
+PORT=3000 node server.js  # 포트 변경
+```
+
+- `npm install` 불필요 (외부 의존성 없음).
+- 엔드포인트: `GET /`(정적 페이지), `GET /events`(SSE 구독), `POST /live`(브로드캐스트만, 클립보드 미사용), `POST /paste`(클립보드 복사 + 브로드캐스트).
+- 요청 본문 크기 제한은 `server.js`의 `MAX_BODY_SIZE`(기본 1024*1024, 약 100만 자)이며 초과 시 413을 반환한다.
+- 서버·클라이언트 로직을 수정한 뒤에는 `curl`로 `GET /`, `POST /live`, `POST /paste`를 직접 호출하고 `pbpaste`(macOS) 등으로 클립보드 반영을 확인해 회귀를 잡는다.
 
 ## 로드맵
 
@@ -24,6 +37,7 @@ netdrop은 같은 로컬 네트워크(Wi-Fi)에 연결된 두 기기 사이에�
 - 런타임: Node.js (내장 모듈만 사용, 외부 npm 의존성 없음 — `npm install` 없이 `node server.js`로 바로 실행)
 - 서버: 내장 `http` 모듈로 작성한 단일 파일 서버 (Express 등 프레임워크 미사용)
 - 프런트엔드: 별도 빌드 없는 정적 HTML + vanilla JS (textarea 입력 → fetch POST)
+- 실시간 미리보기: Server-Sent Events (`EventSource`), 별도 라이브러리 없이 내장 `http` 응답 스트림으로 구현
 - 클립보드 복사: OS 기본 명령을 `child_process`로 호출 (macOS `pbcopy`, Windows `clip`, Linux `xclip`/`xsel`)
 - 접속 안내: 서버 시작 시 같은 Wi-Fi에서 접속할 로컬 IP:포트를 콘솔에 출력 (`os.networkInterfaces()` 활용)
 
