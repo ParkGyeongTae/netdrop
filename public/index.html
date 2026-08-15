@@ -23,12 +23,6 @@
     box-sizing: border-box;
     resize: vertical;
   }
-  button {
-    margin-top: 12px;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-  }
   #live {
     margin-top: 32px;
     padding: 12px;
@@ -47,29 +41,16 @@
 </head>
 <body>
   <h1>netdrop</h1>
-  <p>입력하는 내용은 접속한 모든 사람에게 실시간으로 표시됩니다. 버튼을 클릭하면 서버를 실행 중인 컴퓨터의 클립보드로 복사됩니다.</p>
+  <p>입력하는 내용은 접속한 모든 사람에게 실시간으로 표시됩니다.</p>
   <textarea id="text" placeholder="여기에 입력하세요"></textarea>
-  <br>
-  <button id="send">클립보드로 전송</button>
 
   <p id="live-label">실시간 미리보기</p>
   <div id="live"></div>
 
   <script>
     const textArea = document.getElementById('text');
-    const sendButton = document.getElementById('send');
     const live = document.getElementById('live');
 
-    sendButton.addEventListener('click', () => {
-      if (!textArea.value) return;
-      fetch('/paste', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-        body: textArea.value,
-      }).catch(() => {});
-    });
-
-    // 타이핑/붙여넣기 시 클립보드는 건드리지 않고, 실시간 미리보기만 전송
     let liveTimer = null;
     textArea.addEventListener('input', () => {
       clearTimeout(liveTimer);

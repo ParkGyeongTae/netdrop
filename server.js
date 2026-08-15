@@ -1,5 +1,4 @@
 const http = require('http');
-const { spawn } = require('child_process');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
@@ -7,39 +6,6 @@ const path = require('path');
 const PORT = process.env.PORT || 8080;
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB
 const INDEX_HTML = fs.readFileSync(path.join(__dirname, 'public', 'index.html'));
-
-function copyToClipboard(text) {
-  return new Promise((resolve, reject) => {
-    const platform = os.platform();
-    const attempt = (cmd, args) => {
-      const child = spawn(cmd, args);
-      let failed = false;
-      child.on('error', () => {
-        failed = true;
-        if (platform === 'linux' && cmd === 'xclip') {
-          attempt('xsel', ['--clipboard', '--input']);
-        } else {
-          reject(new Error(`clipboard command not found: ${cmd}`));
-        }
-      });
-      child.on('close', (code) => {
-        if (!failed) {
-          code === 0 ? resolve() : reject(new Error(`${cmd} exited with code ${code}`));
-        }
-      });
-      child.stdin.write(text);
-      child.stdin.end();
-    };
-
-    if (platform === 'darwin') {
-      attempt('pbcopy', []);
-    } else if (platform === 'win32') {
-      attempt('clip', []);
-    } else {
-      attempt('xclip', ['-selection', 'clipboard']);
-    }
-  });
-}
 
 const sseClients = new Set();
 
@@ -106,24 +72,6 @@ const server = http.createServer((req, res) => {
         res.end();
       })
       .catch(() => {});
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/paste') {
-    readBody(req, res)
-      .then((body) =>
-        copyToClipboard(body).then(() => {
-          broadcast(body);
-          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ ok: true }));
-        })
-      )
-      .catch((err) => {
-        if (!res.writableEnded) {
-          res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ ok: false, error: err.message }));
-        }
-      });
     return;
   }
 
