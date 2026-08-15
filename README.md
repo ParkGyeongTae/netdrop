@@ -15,6 +15,12 @@
 - [ ] Phase 2: 파일 전송
 - [ ] Phase 3: 폴더(다중 파일) 전송
 
+## 기술 스택
+
+- Node.js (외부 npm 의존성 없음, `node server.js`로 바로 실행)
+- 내장 `http` 모듈 기반 단일 파일 서버
+- 클립보드 복사는 OS 기본 명령 사용 (macOS `pbcopy` / Windows `clip` / Linux `xclip`, `xsel`)
+
 ## 상태
 
 초기 단계, 개발 진행 중입니다.

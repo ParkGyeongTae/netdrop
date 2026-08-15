@@ -21,7 +21,13 @@ netdrop은 같은 로컬 네트워크(Wi-Fi)에 연결된 두 기기 사이에�
 
 ## 기술 스택
 
-아직 미정. 결정되는 대로 이 섹션과 README.md를 함께 갱신할 것.
+- 런타임: Node.js (내장 모듈만 사용, 외부 npm 의존성 없음 — `npm install` 없이 `node server.js`로 바로 실행)
+- 서버: 내장 `http` 모듈로 작성한 단일 파일 서버 (Express 등 프레임워크 미사용)
+- 프런트엔드: 별도 빌드 없는 정적 HTML + vanilla JS (textarea 입력 → fetch POST)
+- 클립보드 복사: OS 기본 명령을 `child_process`로 호출 (macOS `pbcopy`, Windows `clip`, Linux `xclip`/`xsel`)
+- 접속 안내: 서버 시작 시 같은 Wi-Fi에서 접속할 로컬 IP:포트를 콘솔에 출력 (`os.networkInterfaces()` 활용)
+
+Phase 2/3(파일·폴더 전송)에서 필요해지면 그때 의존성 추가 여부를 재검토한다.
 
 ## 작업 원칙
 

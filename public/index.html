@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>netdrop</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    max-width: 640px;
+    margin: 40px auto;
+    padding: 0 16px;
+    color: #222;
+  }
+  h1 {
+    font-size: 20px;
+  }
+  textarea {
+    width: 100%;
+    height: 200px;
+    font-size: 16px;
+    padding: 12px;
+    box-sizing: border-box;
+    resize: vertical;
+  }
+  button {
+    margin-top: 12px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #status {
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  #status.ok { color: #0a7d2c; }
+  #status.error { color: #c0392b; }
+</style>
+</head>
+<body>
+  <h1>netdrop</h1>
+  <p>텍스트를 입력하고 전송하면 서버를 실행 중인 컴퓨터의 클립보드로 복사됩니다.</p>
+  <textarea id="text" placeholder="여기에 텍스트를 입력하세요"></textarea>
+  <br>
+  <button id="send">클립보드로 전송</button>
+  <div id="status"></div>
+
+  <script>
+    const textArea = document.getElementById('text');
+    const sendButton = document.getElementById('send');
+    const status = document.getElementById('status');
+
+    sendButton.addEventListener('click', async () => {
+      const text = textArea.value;
+      if (!text) return;
+
+      status.textContent = '전송 중...';
+      status.className = '';
+
+      try {
+        const res = await fetch('/paste', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          body: text,
+        });
+        const data = await res.json();
+        if (data.ok) {
+          status.textContent = '클립보드에 복사되었습니다.';
+          status.className = 'ok';
+          textArea.value = '';
+        } else {
+          status.textContent = '오류: ' + data.error;
+          status.className = 'error';
+        }
+      } catch (err) {
+        status.textContent = '오류: ' + err.message;
+        status.className = 'error';
+      }
+    });
+  </script>
+</body>
+</html>
