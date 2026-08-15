@@ -41,6 +41,31 @@ function copyToClipboard(text) {
   });
 }
 
+const sseClients = new Set();
+
+function broadcast(text) {
+  const payload = `data: ${JSON.stringify({ text })}\n\n`;
+  for (const client of sseClients) {
+    client.write(payload);
+  }
+}
+
+function readBody(req, res) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > MAX_BODY_SIZE) {
+        res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: '텍스트가 너무 깁니다.' }));
+        req.destroy();
+        reject(new Error('too large'));
+      }
+    });
+    req.on('end', () => resolve(body));
+  });
+}
+
 function getLocalIps() {
   const interfaces = os.networkInterfaces();
   const ips = [];
@@ -61,32 +86,44 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'POST' && req.url === '/paste') {
-    let body = '';
-    let tooLarge = false;
-
-    req.on('data', (chunk) => {
-      body += chunk;
-      if (body.length > MAX_BODY_SIZE) {
-        tooLarge = true;
-        res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ ok: false, error: '텍스트가 너무 깁니다.' }));
-        req.destroy();
-      }
+  if (req.method === 'GET' && req.url === '/events') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
     });
+    res.write('\n');
+    sseClients.add(res);
+    req.on('close', () => sseClients.delete(res));
+    return;
+  }
 
-    req.on('end', () => {
-      if (tooLarge) return;
-      copyToClipboard(body)
-        .then(() => {
+  if (req.method === 'POST' && req.url === '/live') {
+    readBody(req, res)
+      .then((body) => {
+        broadcast(body);
+        res.writeHead(204);
+        res.end();
+      })
+      .catch(() => {});
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/paste') {
+    readBody(req, res)
+      .then((body) =>
+        copyToClipboard(body).then(() => {
+          broadcast(body);
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
           res.end(JSON.stringify({ ok: true }));
         })
-        .catch((err) => {
+      )
+      .catch((err) => {
+        if (!res.writableEnded) {
           res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
           res.end(JSON.stringify({ ok: false, error: err.message }));
-        });
-    });
+        }
+      });
     return;
   }
 
